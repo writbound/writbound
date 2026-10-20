@@ -77,6 +77,7 @@ export async function serve({ vault, key, rpc, logsRpc, journal }) {
           return fail(`not sent: the call would revert (${why(e)}). This is not a writ refusal — check amount, balance and gas.`)
         }
         const predicted = sim.code === 0 ? 'filed' : REFUSAL[sim.code]?.[0]
+        if (p.guard && !a.dryRun) return fail(`not sent: ${p.guard}. Try again later.`)
         if (a.dryRun || (sim.code !== 0 && a.skipIfRefused)) {
           return json({ sent: false, predicted, why: sim.code ? REFUSAL[sim.code]?.[1] : undefined, ...p.view })
         }

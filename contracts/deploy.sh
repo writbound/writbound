@@ -7,7 +7,7 @@
 #
 # Wallet (contracts/.env, gitignored, chmod 600), first match wins:
 #   ETH_KEYSTORE_ACCOUNT=<name>   a `cast wallet import <name> --interactive` keystore
-#   DEPLOYER_PRIVATE_KEY=0x…      a throwaway deployer (needs a little RC mainnet ETH; gas is ~0.01 gwei)
+#   DEPLOYER_PRIVATE_KEY=0x…      a throwaway deployer (needs a little RC mainnet ETH; gas is ~0.02 gwei)
 #
 # publicnode is the default RPC (enough to simulate/broadcast).
 # Blockscout's verify API is behind Cloudflare → Sourcify.

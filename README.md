@@ -29,7 +29,7 @@ Before the agent can trade:
 |---|---|
 | `writ_status` | the writ, what is left today, vault balances, agent gas (read-only) |
 | `writ_quote` | QuoterV2 quote, the TWAP floor, the minOut used, and whether the vault would file or refuse right now |
-| `writ_trade` | buy or sell with a reason (≤ 280 bytes, published on chain). Simulates first, then sends. A predicted refusal is still sent so it is on the record. `skipIfRefused` reports a predicted refusal without sending it. `dryRun` only simulates |
+| `writ_trade` | buy or sell with a reason (≤ 280 bytes, published on chain). Simulates first, then sends. A predicted refusal is still sent so it is on the record. `skipIfRefused` reports a predicted refusal without sending it. `dryRun` only simulates. Optional `toleranceBps` (1–1000, default 50) on both quote and trade |
 | `writ_history` | fills and refusals from the last ~90 min on chain plus this machine's journal |
 
 On start, the server checks that the RPC is chain 4663, that the vault was opened by the WritFactory, and that its key is the vault's agent. The key never leaves the machine and is never printed. The owner's key is never needed.

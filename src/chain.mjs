@@ -148,7 +148,7 @@ export class Writ {
     const tokenOut = buy ? s : getAddress(USDG)
     const amountIn = parseUnits(String(amount), buy ? 6 : 18)
     if (amountIn === 0n) throw new Error('amount must be > 0')
-    const [expectedOut, floor, fee] = await this.read('quoteTwap', [tokenIn, tokenOut, amountIn])
+    const [expectedOut, floor, fee, windowUsed] = await this.read('quoteTwap', [tokenIn, tokenOut, amountIn])
     let quote = 0n
     if (fee !== 0) {
       const r = await this.pub.simulateContract({
@@ -161,13 +161,22 @@ export class Writ {
     const minOut = own > floor ? own : floor
     const symbol = await this.symbolOf(s)
     const fmtOut = buy ? shares : usd
+    // Client-side guard: a short TWAP window (young or low-cardinality pool) is close to spot, and a spot quote far from the
+    // TWAP means the pool is being moved. The vault would still decide; the MCP just does not send into that.
+    const dev = quote && expectedOut ? Number((quote > expectedOut ? quote - expectedOut : expectedOut - quote) * 10_000n / expectedOut) : 0
+    const guard = fee === 0 ? null
+      : Number(windowUsed) < 300 ? `the pool's TWAP covers only ${windowUsed}s of the 300s window, so its floor is close to the spot price`
+      : dev > 500 ? `the spot quote is ${(dev / 100).toFixed(2)} % away from the 5-minute TWAP; the pool looks moved`
+      : null
     return {
       args: [tokenIn, tokenOut, amountIn, minOut, fee || 0],
       view: {
         side, stock: symbol, amountIn: buy ? `${amount} USDG` : `${amount} ${symbol}`,
         quoterOut: fmtOut(quote), twapOut: fmtOut(expectedOut), twapFloor: fmtOut(floor), minOut: fmtOut(minOut),
-        poolFee: fee || null, pinnedPool: fee !== 0,
+        poolFee: fee || null, pinnedPool: fee !== 0, twapWindowSec: Number(windowUsed),
+        ...(guard ? { notSendable: guard } : {}),
       },
+      guard,
     }
   }
 

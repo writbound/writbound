@@ -23,7 +23,7 @@ const keyFile = opt('key-file', 'WRITBOUND_KEY_FILE', join(homedir(), '.writboun
 
 function loadKey() {
   if (!existsSync(keyFile)) {
-    console.error(`no agent key at ${keyFile}. Run: writbound-mcp init`)
+    console.error(`no agent key at ${keyFile}. Run: npx -y github:writbound/writbound init`)
     process.exit(1)
   }
   const k = readFileSync(keyFile, 'utf8').trim()
@@ -48,7 +48,7 @@ if (cmd === 'init') {
   const a = privateKeyToAccount(loadKey()).address
   console.log(`agent address: ${a}`)
   console.log('Next: open a writ with this address as the agent, send the agent a little ETH on Robinhood Chain for gas,')
-  console.log('fund the vault with USDG, then run: writbound-mcp --writ 0xYOUR_VAULT')
+  console.log('fund the vault with USDG, then run: npx -y github:writbound/writbound --writ 0xYOUR_VAULT')
 } else if (cmd === 'address') {
   console.log(privateKeyToAccount(loadKey()).address)
 } else if (cmd === 'serve') {

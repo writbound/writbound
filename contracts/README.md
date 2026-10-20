@@ -1,14 +1,14 @@
 # Writbound contracts
 
 Robinhood Chain mainnet (chain 4663). Foundry, solc 0.8.28, cancun, via-IR, OZ v5.
-The trade engine comes from TiercelVault, an earlier vault of ours that ran on Robinhood Chain mainnet, renamed and narrowed.
+The trade engine comes from TiercelVault ([0x4f28…27b4](https://robinhoodchain.blockscout.com/address/0x4f284aba45fa4d6cedbe119b048a59604d4427b4)), an earlier vault of ours that ran on Robinhood Chain mainnet, renamed and narrowed.
 
 ## What it is
 
 - **`WritFactory`**: anyone calls `open(agent, writ, allowList, fees)` and gets a `WritVault` they own. No owner, no funds, venue fixed at deploy. Registry: `count`, `vaultAt`, `vaults(from, n)`, `vaultsOf(owner)`, `isWrit`. Event `WritOpened(id, owner, vault, agent)`.
 - **`WritVault`**: one owner, one agent key. The agent can only call
   `execute(tokenIn, tokenOut, amountIn, minOut, fee, reason) → (code, amountOut)`: a stock token ↔ USDG through the stock's pinned Uniswap v3 pool. A writ breach does not revert. It emits `Refused(seq, code, …, reason)` and returns, so every refusal is on chain. A settled trade emits `Filed(seq, …, reason)`.
-- Funds arrive by plain USDG transfer. Only the owner can withdraw (`withdraw`, `withdrawAll`).
+- Funds arrive by plain USDG transfer. Only the owner can withdraw (`withdraw`, `withdrawAll`). If one stock is paused, `withdrawAll` reverts; withdraw the other tokens one by one with `withdraw`.
 
 ## The writ
 
@@ -30,7 +30,7 @@ Refusal codes, checked in this order:
 | 5 | OVER_TRADE_CAP | notional > `maxPerTrade` (sells: realised USDG out, rolled back) |
 | 6 | OVER_DAY_CAP | spent today + notional > `maxPerDay` |
 | 7 | NOT_QUOTE_PAIR | not stock↔USDG, or not the pinned fee tier |
-| 8 | SLIPPAGE | `minOut` under the 5-min TWAP floor, `minOut = 0`, or the router's "Too little received" |
+| 8 | SLIPPAGE | `minOut` under the TWAP floor (up to 5 min, shortened to the pool's history: `quoteTwap().windowUsed`), `minOut = 0`, or the router's "Too little received" |
 
 Rules carried over from Tiercel:
 - Malformed calls revert and are not refusals: amount 0, balance too low, reason over 280 bytes.
@@ -40,7 +40,7 @@ Rules carried over from Tiercel:
 
 - Anyone opens their own vault through the factory. Tiercel only had team-run house vaults.
 - Quote asset is USDG only. No Pons/Gyr path, no keeper.
-- Allowlist accepts only official stock tokens: runtime codehash `0x6c1fdd40…cd65630` (the Robinhood stock-token BeaconProxy; read from NVDA, TSLA and SPY on 2026-10-20). A look-alike reverts `NotStockToken`.
+- Allowlist accepts only official stock tokens: runtime codehash `0x6c1fdd40…cd65630` (the Robinhood stock-token BeaconProxy; read from NVDA, TSLA and SPY on 2026-10-20). Any other contract reverts `NotStockToken`, so only contracts running the official stock-token proxy can be allowed, and only the owner adds them.
 - The agent's reason is a string in the event (≤ 280 bytes) instead of a hash. A bring-your-own agent has no server to publish reasons off chain.
 - New views: `leftToday()`, `writFactory()`, `stockCodehash()`. `MAX_SLIPPAGE_LIMIT` lowered from 3000 to 1000 bps.
 
@@ -73,4 +73,4 @@ Fork results, 2026-10-20 05:46 UTC:
 - Estimated cost is about 0.00036 ETH (×2 gas buffer).
 - Vaults opened by the factory are verified separately with `forge verify-contract <vault> src/WritVault.sol:WritVault --chain 4663 --verifier sourcify --guess-constructor-args`.
 
-Stock tokens can be paused or blocklisted by their issuer, and `uiMultiplier` ≠ 1, so accounting uses raw `balanceOf`. On weekends the Chainlink feeds go quiet for about 48–56 h and pool liquidity drops sharply, so the web default writ uses US market hours.
+Stock tokens can be paused or blocklisted by their issuer (and the issuer can burn balances), and `uiMultiplier` ≠ 1, so accounting uses raw `balanceOf`. On weekends the Chainlink feeds go quiet for about 48–56 h and pool liquidity drops sharply, so the web default writ uses US market hours.
