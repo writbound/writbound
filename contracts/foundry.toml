@@ -1,0 +1,31 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+test = "test"
+script = "script"
+solc_version = "0.8.28"
+# Robinhood Chain = Arbitrum Orbit (Nitro). PUSH0 / TSTORE / MCOPY work on RC mainnet (checked 2026-10-07), so cancun is safe.
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 2000
+via_ir = true
+remappings = [
+  "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+  "forge-std/=lib/forge-std/src/",
+]
+fs_permissions = [{ access = "read", path = "./" }]
+
+[fuzz]
+runs = 512
+
+[rpc_endpoints]
+# publicnode keeps only ~100 blocks (~10 s) of state: fine for simulation/broadcast, too short for fork tests.
+robinhood = "https://robinhood-rpc.publicnode.com"
+# Archive; used for fork tests (free plan: logs only near head).
+robinhood_fork = "https://robinhood.drpc.org"
+# Official archive RPC.
+robinhood_archive = "https://rpc.mainnet.chain.robinhood.com"
+
+[lint]
+lint_on_build = false
